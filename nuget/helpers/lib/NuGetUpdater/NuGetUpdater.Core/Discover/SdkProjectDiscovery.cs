@@ -9,7 +9,7 @@ internal static class SdkProjectDiscovery
     public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string projectPath, Logger logger)
     {
         // Determine which targets and props files contribute to the build.
-        var buildFiles = await MSBuildHelper.LoadBuildFilesAsync(repoRootPath, projectPath, includeSdkPropsAndTargets: true);
+        var (buildFiles, projectTargetFrameworks) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(repoRootPath, projectPath);
 
         // Get all the dependencies which are directly referenced from the project file or indirectly referenced from
         // targets and props files.
@@ -49,9 +49,7 @@ internal static class SdkProjectDiscovery
             if (buildFile.GetFileType() == ProjectBuildFileType.Project)
             {
                 // Collect information that is specific to the project file.
-                var tfms = MSBuildHelper.GetTargetFrameworkMonikers(buildFiles)
-                    .OrderBy(tfm => tfm)
-                    .ToImmutableArray();
+                var tfms = projectTargetFrameworks.Order().ToImmutableArray();
                 var properties = MSBuildHelper.GetProperties(buildFiles).Values
                     .Where(p => !p.SourceFilePath.StartsWith(".."))
                     .OrderBy(p => p.Name)
